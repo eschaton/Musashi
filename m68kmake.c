@@ -63,6 +63,7 @@ static const char g_version[] = "4.60";
 /* =============================== INCLUDES =============================== */
 /* ======================================================================== */
 
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
