@@ -25,3 +25,4 @@ m68kmake
 m68kops.?
 sim
 tags
+*.d
