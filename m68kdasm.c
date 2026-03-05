@@ -703,10 +703,49 @@ static void d68000_illegal(void)
 	sprintf(g_dasm_str, "dc.w $%04x; ILLEGAL", g_cpu_ir);
 }
 
+#if M68K_LISA_DISASM == M68K_OPT_ON
+static void d68000_1010(void)
+{
+	/* Lisa uses A-line instructions for "Intrinsic Unit" instructions that
+	   take a 24-bit address operand, broken into 7-bit segment and 17-bit
+	   address operand:
+
+		IUJSR xxxxxx	1010 0000 ssss ssso oooo oooo oooo oooo (word address)
+		IUJMP xxxxxx	1010 01__ ssss ssso oooo oooo oooo oooo (word address)
+		IULEA xxxxxx,Ai	1010 10ii isss ssss oooo oooo oooo oooo (implicit 0)
+		IUPEA xxxxxx	1010 11__ ssss ssso oooo oooo oooo oooo (byte address)
+
+	   where IULEA's address operand has an implicit 0 and use with A7 is
+	   disallowed/undefined.
+	 */
+
+	if ((g_cpu_ir & 0xfc00) == 0xa000) {
+		uint next = read_imm_16();
+		uint iuaddr = ((g_cpu_ir & 0x00ff) << 16) | next;
+		sprintf(g_dasm_str, "iujsr   $%08x", iuaddr);
+	} else if ((g_cpu_ir & 0xfc00) == 0xa400) {
+		uint next = read_imm_16();
+		uint iuaddr = ((g_cpu_ir & 0x00ff) << 16) | next;
+		sprintf(g_dasm_str, "iujmp   $%08x", iuaddr);
+	} else if ((g_cpu_ir & 0xfc00) == 0xa800) {
+		uint next = read_imm_16();
+		uint iuaddr = ((g_cpu_ir & 0x007f) << 16) | next;
+		uint iureg = (g_cpu_ir>>7)&0x7;
+		sprintf(g_dasm_str, "iulea   $%08x,A%d", iuaddr << 1, iureg);
+	} else if ((g_cpu_ir & 0xfc00) == 0xac00) {
+		uint next = read_imm_16();
+		uint iuaddr = ((g_cpu_ir & 0x00ff) << 16) | next;
+		sprintf(g_dasm_str, "iupea   $%08x", iuaddr);
+	} else {
+		sprintf(g_dasm_str, "dc.w    $%04x; opcode 1010", g_cpu_ir);
+	}
+}
+#else
 static void d68000_1010(void)
 {
 	sprintf(g_dasm_str, "dc.w    $%04x; opcode 1010", g_cpu_ir);
 }
+#endif
 
 
 static void d68000_1111(void)
